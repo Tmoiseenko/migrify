@@ -22,7 +22,7 @@
 ## Installation
 
 ```bash
-pip install transmute
+pip install transmute-db
 ```
 
 ## Quickstart
