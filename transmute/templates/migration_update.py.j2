@@ -1,0 +1,17 @@
+"""Alter {{ table }} table."""
+
+import sqlalchemy as sa
+from transmute import op
+
+
+def upgrade() -> None:
+    with op.batch_alter_table("{{ table }}") as batch_op:
+        # TODO: e.g. batch_op.add_column(sa.Column("phone", sa.String(20)))
+        pass
+
+
+def downgrade() -> None:
+    with op.batch_alter_table("{{ table }}") as batch_op:
+        # TODO: reverse the changes made in upgrade()
+        pass
+

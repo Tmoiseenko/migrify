@@ -1,0 +1,17 @@
+"""Create {{ table }} table."""
+
+import sqlalchemy as sa
+from transmute import op
+
+
+def upgrade() -> None:
+    op.create_table(
+        "{{ table }}",
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+        # TODO: add columns
+    )
+
+
+def downgrade() -> None:
+    op.drop_table("{{ table }}")
+
