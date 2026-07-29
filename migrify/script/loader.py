@@ -8,7 +8,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import List, Optional
 
-from transmute.exceptions import ScriptError
+from migrify.exceptions import ScriptError
 
 # Migration filenames must start with a timestamp: YYYY_MM_DD_HHmmss_<name>.py
 _TIMESTAMP_RE = re.compile(r"^\d{4}_\d{2}_\d{2}_\d{6}_")

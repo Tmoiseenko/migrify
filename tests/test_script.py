@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from transmute.script.creator import MigrationCreator
-from transmute.script.loader import MigrationScript, ScriptLoader
+from migrify.script.creator import MigrationCreator
+from migrify.script.loader import MigrationScript, ScriptLoader
 
 
 class TestScriptLoader:

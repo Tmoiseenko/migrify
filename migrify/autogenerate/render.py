@@ -12,7 +12,7 @@ from typing import List, Optional
 import sqlalchemy as sa
 from sqlalchemy.sql.sqltypes import TypeEngine
 
-from transmute.autogenerate.compare import (
+from migrify.autogenerate.compare import (
     AddColumnDiff,
     AlterColumnDiff,
     CreateForeignKeyDiff,

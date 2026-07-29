@@ -3,14 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "transmute-db"
+name = "migrify"
 version = "0.1.0"
 description = "Database migrations: Alembic autogenerate power, Laravel linear simplicity"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Timur Moiseenko", email = "" }
+    { name = "Timur Moiseenko" }
 ]
 keywords = ["database", "migrations", "sqlalchemy", "schema", "alembic", "laravel"]
 classifiers = [
@@ -30,9 +30,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Tmoiseenko/transmute"
-Repository = "https://github.com/Tmoiseenko/transmute"
-Issues = "https://github.com/Tmoiseenko/transmute/issues"
+Homepage = "https://github.com/Tmoiseenko/migrify"
+Repository = "https://github.com/Tmoiseenko/migrify"
+Issues = "https://github.com/Tmoiseenko/migrify/issues"
 
 [project.optional-dependencies]
 dev = [
@@ -41,12 +41,10 @@ dev = [
 ]
 
 [project.scripts]
-transmute = "transmute.cli.main:cli"
+migrify = "migrify.cli.main:cli"
 
 [tool.setuptools.packages.find]
-include = ["transmute*"]
+include = ["migrify*"]
 
 [tool.setuptools.package-data]
-transmute = ["templates/*.j2"]
-
-
+migrify = ["templates/*.j2"]

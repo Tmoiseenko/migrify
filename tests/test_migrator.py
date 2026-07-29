@@ -9,7 +9,7 @@ import pytest
 import sqlalchemy as sa
 
 from tests.conftest import write_migration
-from transmute.migrator import Migrator
+from migrify.migrator import Migrator
 
 
 class TestMigratorMigrate:

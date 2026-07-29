@@ -1,2 +1,2 @@
-"""Test suite for transmute package."""
+"""Test suite for migrify package."""
 

@@ -24,10 +24,10 @@ from typing import Callable, List, Optional
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
-from transmute.exceptions import MigrationError
-from transmute.operations.ops import Operations, _current_ops
-from transmute.repository import MigrationRecord, MigrationRepositoryInterface
-from transmute.script.loader import MigrationScript, ScriptLoader
+from migrify.exceptions import MigrationError
+from migrify.operations.ops import Operations, _current_ops
+from migrify.repository import MigrationRecord, MigrationRepositoryInterface
+from migrify.script.loader import MigrationScript, ScriptLoader
 
 
 # ---------------------------------------------------------------------------

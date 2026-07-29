@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 import sqlalchemy as sa
 
-from transmute.migrator import Migrator
-from transmute.repository.database import DatabaseMigrationRepository
-from transmute.script.loader import ScriptLoader
+from migrify.migrator import Migrator
+from migrify.repository.database import DatabaseMigrationRepository
+from migrify.script.loader import ScriptLoader
 
 
 @pytest.fixture()
@@ -67,7 +67,7 @@ def write_migration(migrations_dir: Path, name: str, upgrade: str = "pass", down
     """Create a migration .py file in *migrations_dir*."""
     body = textwrap.dedent(f"""\
         import sqlalchemy as sa
-        from transmute import op
+        from migrify import op
 
         def upgrade():
             {upgrade}

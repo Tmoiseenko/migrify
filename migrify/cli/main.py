@@ -20,11 +20,11 @@ from typing import Optional
 import click
 import sqlalchemy as sa
 
-from transmute.config import Config
-from transmute.migrator import Migrator
-from transmute.repository.database import DatabaseMigrationRepository
-from transmute.script.creator import MigrationCreator
-from transmute.script.loader import ScriptLoader
+from migrify.config import Config
+from migrify.migrator import Migrator
+from migrify.repository.database import DatabaseMigrationRepository
+from migrify.script.creator import MigrationCreator
+from migrify.script.loader import ScriptLoader
 
 
 # ---------------------------------------------------------------------------
@@ -66,9 +66,9 @@ def _load_config(db_url: Optional[str]) -> Config:
 # ---------------------------------------------------------------------------
 
 @click.group()
-@click.version_option(package_name="transmute")
+@click.version_option(package_name="migrify")
 def cli() -> None:
-    """transmute — database migrations with Alembic power and Laravel simplicity."""
+    """migrify — database migrations with Alembic power and Laravel simplicity."""
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def cli() -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--step", is_flag=True, default=False, help="Each migration in its own batch.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 def migrate(db_url: Optional[str], step: bool, pretend: bool) -> None:
@@ -108,7 +108,7 @@ def migrate(db_url: Optional[str], step: bool, pretend: bool) -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--batch", "batches", default=1, show_default=True, help="Number of batches to roll back.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 def rollback(db_url: Optional[str], batches: int, pretend: bool) -> None:
@@ -140,7 +140,7 @@ def rollback(db_url: Optional[str], batches: int, pretend: bool) -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 @click.confirmation_option(prompt="This will roll back ALL migrations. Continue?")
 def reset(db_url: Optional[str], pretend: bool) -> None:
@@ -161,7 +161,7 @@ def reset(db_url: Optional[str], pretend: bool) -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 @click.confirmation_option(prompt="This will DROP ALL TABLES and re-migrate. Continue?")
 def fresh(db_url: Optional[str], pretend: bool) -> None:
@@ -182,7 +182,7 @@ def fresh(db_url: Optional[str], pretend: bool) -> None:
 # ---------------------------------------------------------------------------
 
 @cli.command()
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 def status(db_url: Optional[str]) -> None:
     """Show the status of all migration files."""
     config = _load_config(db_url)
@@ -215,7 +215,7 @@ def status(db_url: Optional[str]) -> None:
 
 @cli.command()
 @click.argument("name")
-@click.option("--db-url", envvar="TRANSMUTE_DB_URL", default=None, help="Database URL.")
+@click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--create", "create_table", default=None, help="Generate a CREATE TABLE stub.")
 @click.option("--table", "update_table", default=None, help="Generate an ALTER TABLE stub.")
 @click.option(
@@ -238,9 +238,9 @@ def make(
     Examples:
 
     \b
-        transmute make create_users_table
-        transmute make --create users create_users_table
-        transmute make --autogenerate add_phone_to_users
+        migrify make create_users_table
+        migrify make --create users create_users_table
+        migrify make --autogenerate add_phone_to_users
     """
     config = _load_config(db_url)
     creator = MigrationCreator(Path(config.migrations_dir))
@@ -249,12 +249,12 @@ def make(
         if not config.models_module:
             _echo_err(
                 "models_module is required for --autogenerate. "
-                "Set it in [tool.transmute] → models_module = 'myapp.models'."
+                "Set it in [tool.migrify] → models_module = 'myapp.models'."
             )
             sys.exit(1)
 
         _echo_info(f"Loading models from {config.models_module!r}…")
-        from transmute.autogenerate.api import generate_migration_content, load_metadata_from_module
+        from migrify.autogenerate.api import generate_migration_content, load_metadata_from_module
 
         engine = sa.create_engine(config.db_url)
         metadata = load_metadata_from_module(config.models_module, config.models_metadata_attr)

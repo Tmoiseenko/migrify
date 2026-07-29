@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import sqlalchemy as sa
 
-from transmute.repository.database import DatabaseMigrationRepository
+from migrify.repository.database import DatabaseMigrationRepository
 
 
 @pytest.fixture()

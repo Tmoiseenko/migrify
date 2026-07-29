@@ -9,7 +9,7 @@ Architecture mirrors Alembic's autogenerate but without the revision/DAG system:
     api.py      — public entry point
 """
 
-from transmute.autogenerate.api import generate_migration_content, compare_metadata
+from migrify.autogenerate.api import generate_migration_content, compare_metadata
 
 __all__ = ["generate_migration_content", "compare_metadata"]
 

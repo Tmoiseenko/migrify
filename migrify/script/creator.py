@@ -11,7 +11,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 def _make_env() -> Environment:
     return Environment(
-        loader=PackageLoader("transmute", "templates"),
+        loader=PackageLoader("migrify", "templates"),
         autoescape=select_autoescape([]),
         keep_trailing_newline=True,
     )

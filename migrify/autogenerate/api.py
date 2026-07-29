@@ -5,7 +5,7 @@ Usage
 -----
 From Python:
 
-    from transmute.autogenerate import generate_migration_content
+    from migrify.autogenerate import generate_migration_content
     import sqlalchemy as sa
     from sqlalchemy import create_engine
 
@@ -15,7 +15,7 @@ From Python:
 
     upgrade_body, downgrade_body = generate_migration_content(engine, metadata)
 
-From the CLI this is called transparently via ``transmute make --autogenerate``.
+From the CLI this is called transparently via ``migrify make --autogenerate``.
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ from typing import List, Optional, Set, Tuple
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
-from transmute.autogenerate.compare import Diff, SchemaComparator
-from transmute.autogenerate.render import render_downgrade_body, render_upgrade_body
+from migrify.autogenerate.compare import Diff, SchemaComparator
+from migrify.autogenerate.render import render_downgrade_body, render_upgrade_body
 
 
 # ---------------------------------------------------------------------------

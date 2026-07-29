@@ -20,7 +20,7 @@ from typing import List
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
-from transmute.repository import MigrationRecord, MigrationRepositoryInterface
+from migrify.repository import MigrationRecord, MigrationRepositoryInterface
 
 
 class DatabaseMigrationRepository(MigrationRepositoryInterface):

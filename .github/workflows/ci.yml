@@ -42,5 +42,5 @@ jobs:
           python-version: "3.12"
       - run: pip install uv
       - run: uv pip install --system ruff
-      - run: ruff check transmute/
+      - run: ruff check migrify/
 

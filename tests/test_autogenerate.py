@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 import sqlalchemy as sa
 
-from transmute.autogenerate.api import compare_metadata, generate_migration_content
-from transmute.autogenerate.compare import (
+from migrify.autogenerate.api import compare_metadata, generate_migration_content
+from migrify.autogenerate.compare import (
     AddColumnDiff,
     CreateTableDiff,
     DropColumnDiff,
     DropTableDiff,
 )
-from transmute.autogenerate.render import render_type
+from migrify.autogenerate.render import render_type
 
 
 class TestRenderType:

@@ -3,7 +3,7 @@ DDL operations API.
 
 Usage inside a migration file:
 
-    from transmute import op
+    from migrify import op
     import sqlalchemy as sa
 
     def upgrade() -> None:
@@ -407,7 +407,7 @@ class _OpProxy:
 
     Import once at module level::
 
-        from transmute import op
+        from migrify import op
 
     Then use inside ``upgrade()`` / ``downgrade()`` — the proxy
     automatically delegates to the Operations instance set by the Migrator.

@@ -1,4 +1,4 @@
-"""Custom exceptions for transmute."""
+"""Custom exceptions for migrify."""
 
 
 class TransmuteError(Exception):

@@ -1,10 +1,10 @@
 """
-Configuration loading for transmute.
+Configuration loading for migrify.
 
 Priority (highest → lowest):
-  1. Explicit kwargs / environment variables (TRANSMUTE_DB_URL, etc.)
-  2. [tool.transmute] section in pyproject.toml
-  3. transmute.toml in the current working directory
+  1. Explicit kwargs / environment variables (MIGRIFY_DB_URL, etc.)
+  2. [tool.migrify] section in pyproject.toml
+  3. migrify.toml in the current working directory
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from transmute.exceptions import ConfigurationError
+from migrify.exceptions import ConfigurationError
 
 # Python 3.11+ ships tomllib in stdlib; older versions need tomli.
 if sys.version_info >= (3, 11):
@@ -50,11 +50,11 @@ class Config:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Config":
-        db_url = data.get("db_url") or os.environ.get("TRANSMUTE_DB_URL")
+        db_url = data.get("db_url") or os.environ.get("MIGRIFY_DB_URL")
         if not db_url:
             raise ConfigurationError(
-                "db_url is required. Set it in [tool.transmute] or via the "
-                "TRANSMUTE_DB_URL environment variable."
+                "db_url is required. Set it in [tool.migrify] or via the "
+                "MIGRIFY_DB_URL environment variable."
             )
         return cls(
             db_url=db_url,
@@ -83,7 +83,7 @@ class Config:
             )
         with open(path, "rb") as fh:
             data = tomllib.load(fh)
-        section = data.get("tool", {}).get("transmute", {})
+        section = data.get("tool", {}).get("migrify", {})
         return cls.from_dict(section)
 
     @classmethod
@@ -91,15 +91,15 @@ class Config:
         """
         Auto-discover configuration by walking up from *start_dir*
         (defaults to cwd).  Checks:
-          1. TRANSMUTE_DB_URL env var (minimal valid config)
-          2. transmute.toml
-          3. pyproject.toml [tool.transmute]
+          1. MIGRIFY_DB_URL env var (minimal valid config)
+          2. migrify.toml
+          3. pyproject.toml [tool.migrify]
         """
         cwd = Path(start_dir or os.getcwd())
 
         # Walk up the directory tree looking for a config file.
         for directory in [cwd, *cwd.parents]:
-            toml_path = directory / "transmute.toml"
+            toml_path = directory / "migrify.toml"
             if toml_path.exists():
                 return cls.from_toml_file(toml_path)
 
@@ -109,17 +109,17 @@ class Config:
                     cfg = cls.from_pyproject(pyproject_path)
                     return cfg
                 except ConfigurationError:
-                    # pyproject.toml exists but has no [tool.transmute] with db_url
+                    # pyproject.toml exists but has no [tool.migrify] with db_url
                     pass
 
         # Last resort: environment variable only
-        db_url = os.environ.get("TRANSMUTE_DB_URL")
+        db_url = os.environ.get("MIGRIFY_DB_URL")
         if db_url:
             return cls(db_url=db_url)
 
         raise ConfigurationError(
-            "Could not find transmute configuration. "
-            "Create a transmute.toml or add [tool.transmute] to pyproject.toml "
+            "Could not find migrify configuration. "
+            "Create a migrify.toml or add [tool.migrify] to pyproject.toml "
             "with at least db_url = '...'."
         )
 
