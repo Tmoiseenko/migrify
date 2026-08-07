@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Timur Moiseenko" }
+    { name = "Timur Moiseenko", email = "tmoiseenko@users.noreply.github.com" }
 ]
 keywords = ["database", "migrations", "sqlalchemy", "schema", "alembic", "laravel"]
 classifiers = [
