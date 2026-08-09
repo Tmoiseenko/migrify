@@ -35,6 +35,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# uv lockfile — not needed for a library package
+uv.lock
+
 # Transmute test databases
 *.db
 

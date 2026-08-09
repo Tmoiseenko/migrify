@@ -21,6 +21,7 @@ From the CLI this is called transparently via ``migrify make --autogenerate``.
 from __future__ import annotations
 
 import importlib
+import sys
 from typing import List, Optional, Set, Tuple
 
 import sqlalchemy as sa
@@ -102,8 +103,24 @@ def load_metadata_from_module(module_path: str, attr: str = "metadata") -> sa.Me
     ------
     ImportError / AttributeError if the module or attribute cannot be found.
     """
+    import os
+
+    # Ensure the current working directory is on sys.path so that project
+    # modules (e.g. "src.models") can be found without requiring PYTHONPATH
+    # to be set externally.
+    cwd = os.getcwd()
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
+
     module = importlib.import_module(module_path)
-    obj = getattr(module, attr)
+    try:
+        obj = getattr(module, attr)
+    except AttributeError:
+        raise AttributeError(
+            f"Module '{module_path}' has no attribute '{attr}'. "
+            f"Add `{attr} = Base.metadata` to that module so migrify can "
+            f"read your schema. See: https://github.com/Tmoiseenko/migrify#readme"
+        )
     if callable(obj):
         obj = obj()
     if not isinstance(obj, sa.MetaData):

@@ -27,14 +27,22 @@ pip install migrify-db
 
 ## Quickstart
 
-**1. Configure** (`pyproject.toml` or `migrify.toml`):
+**1. Initialise** (creates `migrations/` and a ready-to-edit `migrify.toml`):
+
+```bash
+migrify init
+```
+
+Then open `migrify.toml` and set your `db_url` (use a **sync** driver):
 
 ```toml
-[tool.migrify]
-db_url = "postgresql://user:pass@localhost/mydb"
+db_url = "postgresql+psycopg2://user:pass@localhost/mydb"
 migrations_dir = "migrations"
 # models_module = "myapp.models"  # for autogenerate
 ```
+
+> **Note:** migrify is sync-only. If your app uses an async driver (e.g. `asyncpg`),
+> migrify will auto-switch to the sync equivalent and print a warning.
 
 **2. Create a migration:**
 
@@ -45,6 +53,20 @@ migrify make create_users_table
 # With autogenerate (compares your SQLAlchemy models with DB)
 migrify make --autogenerate add_phone_to_users
 ```
+
+> **Autogenerate requirement:** the module set in `models_module` must expose a
+> `metadata` attribute of type `sqlalchemy.MetaData`.  With declarative models,
+> add one line to your models package:
+>
+> ```python
+> # myapp/models/__init__.py
+> from .base import Base          # your DeclarativeBase
+> # ... other imports ...
+>
+> metadata = Base.metadata        # ← required for --autogenerate
+> ```
+>
+> The attribute name can be changed via `models_metadata_attr` in the config.
 
 **3. Edit the migration file:**
 
@@ -80,6 +102,7 @@ migrify fresh            # drop everything and re-migrate
 
 | Command | Description |
 |---|---|
+| `migrify init` | Scaffold `migrations/` dir and `migrify.toml` template |
 | `migrify migrate` | Apply all pending migrations |
 | `migrify migrate --step` | Apply pending, each in its own batch |
 | `migrify migrate --pretend` | Show SQL without executing |

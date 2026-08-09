@@ -57,8 +57,12 @@ def _make_migrator(config: Config, verbose: bool = True) -> Migrator:
 
 def _load_config(db_url: Optional[str]) -> Config:
     if db_url:
-        return Config(db_url=db_url)
-    return Config.load()
+        config = Config(db_url=db_url)
+    else:
+        config = Config.load()
+    if config._async_driver_warning:
+        click.echo(click.style("  ⚠  ", fg="yellow") + config._async_driver_warning, err=True)
+    return config
 
 
 # ---------------------------------------------------------------------------
@@ -273,4 +277,80 @@ def make(
         )
 
     _echo_ok(f"Created migration: {path}")
+
+
+# ---------------------------------------------------------------------------
+# init
+# ---------------------------------------------------------------------------
+
+_MIGRIFY_TOML_TEMPLATE = """\
+# migrify configuration
+# Documentation: https://github.com/Tmoiseenko/migrify
+
+# Database connection URL (sync driver required).
+# Examples:
+#   postgresql+psycopg2://user:password@localhost:5432/mydb
+#   mysql+pymysql://user:password@localhost:3306/mydb
+#   sqlite:///./db.sqlite3
+db_url = "postgresql+psycopg2://user:password@localhost:5432/mydb"
+
+# Directory where migration files are stored.
+migrations_dir = "migrations"
+
+# Name of the migrations tracking table in the database.
+# migrations_table = "migrations"
+
+# Dotted Python path to the module that exposes your SQLAlchemy MetaData.
+# Required for `migrify make --autogenerate`.
+# Example: "myapp.models" — the module must expose a `metadata` attribute.
+# models_module = "myapp.models"
+
+# Name of the MetaData attribute inside models_module (default: "metadata").
+# models_metadata_attr = "metadata"
+"""
+
+
+@cli.command("init")
+@click.option(
+    "--migrations-dir",
+    default="migrations",
+    show_default=True,
+    help="Directory to create for migration files.",
+)
+@click.option(
+    "--toml/--no-toml",
+    "write_toml",
+    default=True,
+    help="Write a migrify.toml config template.",
+)
+def init(migrations_dir: str, write_toml: bool) -> None:
+    """Scaffold the migrations directory and a config template.
+
+    Run this once at the start of a project to get a ready-to-edit
+    migrify.toml and an empty migrations/ directory.
+
+    \b
+        migrify init
+        migrify init --migrations-dir db/migrations
+    """
+    # Create migrations directory
+    mdir = Path(migrations_dir)
+    mdir.mkdir(parents=True, exist_ok=True)
+    _echo_ok(f"Migrations directory ready: {mdir}/")
+
+    # Write migrify.toml if requested
+    if write_toml:
+        toml_path = Path("migrify.toml")
+        if toml_path.exists():
+            _echo_info("migrify.toml already exists — skipping.")
+        else:
+            content = _MIGRIFY_TOML_TEMPLATE
+            if migrations_dir != "migrations":
+                content = content.replace(
+                    'migrations_dir = "migrations"',
+                    f'migrations_dir = "{migrations_dir}"',
+                )
+            toml_path.write_text(content, encoding="utf-8")
+            _echo_ok(f"Config created: {toml_path}")
+            _echo_info("Edit migrify.toml and set db_url before running migrations.")
 

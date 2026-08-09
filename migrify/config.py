@@ -9,6 +9,15 @@ Priority (highest → lowest):
 
 from __future__ import annotations
 
+# Async SQLAlchemy drivers that migrify cannot use (it is sync-only).
+# Maps async driver suffix → sync replacement (empty string = use dialect default).
+_ASYNC_DRIVER_MAP = {
+    "asyncpg": "psycopg2",
+    "aiosqlite": "",
+    "aiomysql": "pymysql",
+    "asyncmy": "pymysql",
+}
+
 import os
 import sys
 from dataclasses import dataclass, field
@@ -43,10 +52,44 @@ class Config:
     # Attribute name inside models_module that holds the MetaData object.
     # Defaults to "metadata".
     models_metadata_attr: str = "metadata"
+    # Set when db_url had an async driver that was auto-replaced.
+    _async_driver_warning: Optional[str] = field(default=None, repr=False)
 
     # ------------------------------------------------------------------
     # Factories
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalize_db_url(url: str) -> tuple[str, str | None]:
+        """
+        If *url* uses an async driver (e.g. asyncpg, aiosqlite) that
+        migrify cannot use, swap it for a compatible sync driver and
+        return (normalized_url, warning_message).  Otherwise return
+        (url, None).
+        """
+        import re
+        # Match  dialect+driver://...
+        m = re.match(r"^([^+:]+)\+([^:]+):(//.*)", url)
+        if m:
+            dialect, driver, rest = m.group(1), m.group(2), m.group(3)
+            if driver in _ASYNC_DRIVER_MAP:
+                sync_driver = _ASYNC_DRIVER_MAP[driver]
+                if sync_driver:
+                    new_url = f"{dialect}+{sync_driver}:{rest}"
+                    warn = (
+                        f"Async driver '{driver}' is not supported by migrify (sync-only). "
+                        f"Auto-switched to '{sync_driver}'. "
+                        f"Update your db_url to use '{dialect}+{sync_driver}://' to suppress this warning."
+                    )
+                else:
+                    new_url = f"{dialect}:{rest}"
+                    warn = (
+                        f"Async driver '{driver}' is not supported by migrify (sync-only). "
+                        f"Auto-switched to the default '{dialect}' driver. "
+                        f"Update your db_url to use '{dialect}://' to suppress this warning."
+                    )
+                return new_url, warn
+        return url, None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Config":
@@ -56,12 +99,14 @@ class Config:
                 "db_url is required. Set it in [tool.migrify] or via the "
                 "MIGRIFY_DB_URL environment variable."
             )
+        db_url, _warn = cls._normalize_db_url(db_url)
         return cls(
             db_url=db_url,
             migrations_dir=data.get("migrations_dir", "migrations"),
             migrations_table=data.get("migrations_table", "migrations"),
             models_module=data.get("models_module"),
             models_metadata_attr=data.get("models_metadata_attr", "metadata"),
+            _async_driver_warning=_warn,
         )
 
     @classmethod
