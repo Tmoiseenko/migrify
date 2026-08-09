@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "migrify"
-version = "0.1.0"
+version = "0.1.1"
 description = "Database migrations: Alembic autogenerate power, Laravel linear simplicity"
 readme = "README.md"
 requires-python = ">=3.10"
