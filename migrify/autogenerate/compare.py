@@ -310,7 +310,7 @@ class SchemaComparator:
                     )
                 )
 
-        for idx_name in db_indexes.keys():
+        for idx_name in db_indexes:
             if idx_name in model_indexes:
                 continue
             if idx_name in model_covered_index_names:
