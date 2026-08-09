@@ -38,6 +38,9 @@ def compare_metadata(
     metadata: sa.MetaData,
     include_schemas: set[str | None] | None = None,
     exclude_tables: set[str] | None = None,
+    compare_types: bool = True,
+    exclude_indexes: set[str] | None = None,
+    exclude_columns: set[str] | None = None,
 ) -> list[Diff]:
     """
     Compare *metadata* against the live schema and return detected diffs.
@@ -51,7 +54,17 @@ def compare_metadata(
     include_schemas:
         Schemas to inspect.  Defaults to the default schema (``{None}``).
     exclude_tables:
-        Table names to ignore entirely.
+        Table names (or fnmatch patterns) to ignore entirely.
+    compare_types:
+        Whether to detect column type changes.  Disable if you have
+        intentional model/DB type mismatches (e.g. Enum vs VARCHAR).
+    exclude_indexes:
+        Index names (or fnmatch patterns) to ignore.  Use for manually-created
+        indexes (GIN, trigram, etc.) not managed by models.
+    exclude_columns:
+        Column references in ``table.column`` format to skip when detecting
+        dropped columns.  Use for columns that exist in DB but are not mapped
+        in models (e.g. computed columns accessed via ``@property``).
 
     Returns
     -------
@@ -63,6 +76,9 @@ def compare_metadata(
         metadata=metadata,
         include_schemas=include_schemas,
         exclude_tables=exclude_tables,
+        compare_types=compare_types,
+        exclude_indexes=exclude_indexes,
+        exclude_columns=exclude_columns,
     )
     return comparator.compare()
 
@@ -72,6 +88,9 @@ def generate_migration_content(
     metadata: sa.MetaData,
     include_schemas: set[str | None] | None = None,
     exclude_tables: set[str] | None = None,
+    compare_types: bool = True,
+    exclude_indexes: set[str] | None = None,
+    exclude_columns: set[str] | None = None,
 ) -> tuple[str, str]:
     """
     Generate the Python source for ``upgrade()`` and ``downgrade()`` bodies.
@@ -82,7 +101,7 @@ def generate_migration_content(
         Indented Python source (4-space) ready to be inserted into a migration
         template.  Both strings already contain leading indentation.
     """
-    diffs = compare_metadata(engine, metadata, include_schemas, exclude_tables)
+    diffs = compare_metadata(engine, metadata, include_schemas, exclude_tables, compare_types, exclude_indexes, exclude_columns)
     return render_upgrade_body(diffs), render_downgrade_body(diffs)
 
 

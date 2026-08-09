@@ -11,7 +11,49 @@ from migrify.autogenerate.compare import (
     DropColumnDiff,
     DropTableDiff,
 )
-from migrify.autogenerate.render import render_type
+from migrify.autogenerate.compare import AlterColumnDiff, _types_equivalent
+from migrify.autogenerate.render import render_column, render_type
+
+
+class TestTypesEquivalent:
+    def test_same_generic_types(self):
+        assert _types_equivalent(sa.Integer(), sa.Integer())
+
+    def test_dialect_subclass_equivalent_to_generic(self):
+        from sqlalchemy.dialects.postgresql import INTEGER as PG_INTEGER
+        assert _types_equivalent(PG_INTEGER(), sa.Integer())
+        assert _types_equivalent(sa.Integer(), PG_INTEGER())
+
+    def test_sql_standard_aliases_equivalent(self):
+        # DECIMAL and NUMERIC are both aliases of Numeric
+        assert _types_equivalent(sa.DECIMAL(10, 2), sa.Numeric(10, 2))
+        assert _types_equivalent(sa.NUMERIC(10, 2), sa.Numeric(10, 2))
+        assert _types_equivalent(sa.DECIMAL(10, 3), sa.NUMERIC(10, 3))
+
+    def test_varchar_equivalent_to_string(self):
+        assert _types_equivalent(sa.VARCHAR(100), sa.String(100))
+
+    def test_different_types_not_equivalent(self):
+        assert not _types_equivalent(sa.Integer(), sa.String())
+        assert not _types_equivalent(sa.String(), sa.DateTime())
+
+
+class TestRenderColumnServerDefault:
+    def test_server_default_string(self):
+        col = sa.Column("created_at", sa.DateTime(), server_default="now()")
+        result = render_column(col, indent=0).rstrip(",")
+        assert "server_default='now()'" in result
+
+    def test_server_default_func_now(self):
+        col = sa.Column("updated_at", sa.DateTime(), server_default=sa.func.now())
+        result = render_column(col, indent=0).rstrip(",")
+        assert "sa.text(" in result
+        assert "<" not in result  # no Python object repr leaked
+
+    def test_no_server_default(self):
+        col = sa.Column("name", sa.String())
+        result = render_column(col, indent=0)
+        assert "server_default" not in result
 
 
 class TestRenderType:
@@ -104,6 +146,31 @@ class TestCompareMetadata:
         diffs = compare_metadata(engine, meta)
         drop_cols = [d for d in diffs if isinstance(d, DropColumnDiff)]
         assert any(d.column_name == "old_col" for d in drop_cols)
+
+    def test_no_false_alter_column_for_dialect_types(self, engine):
+        # Ensure that reflected dialect-specific types (e.g. INTEGER vs Integer)
+        # are not treated as a type difference
+        with engine.begin() as conn:
+            conn.execute(sa.text(
+                "CREATE TABLE items (id INTEGER PRIMARY KEY, qty INTEGER, name TEXT)"
+            ))
+
+        meta = sa.MetaData()
+        sa.Table(
+            "items",
+            meta,
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("qty", sa.Integer()),
+            sa.Column("name", sa.Text()),
+        )
+
+        diffs = compare_metadata(engine, meta)
+        # No diffs with type changes — dialect types must be treated as equivalent
+        type_alter_diffs = [
+            d for d in diffs
+            if isinstance(d, AlterColumnDiff) and "type" in d.changes
+        ]
+        assert type_alter_diffs == []
 
 
 class TestGenerateMigrationContent:

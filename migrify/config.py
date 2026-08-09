@@ -51,6 +51,18 @@ class Config:
     # Attribute name inside models_module that holds the MetaData object.
     # Defaults to "metadata".
     models_metadata_attr: str = "metadata"
+    # Table names (or fnmatch patterns like "history_changes_p*") to skip
+    # during autogenerate comparison.
+    exclude_tables: list[str] = field(default_factory=list)
+    # Index names (or fnmatch patterns) to skip during autogenerate comparison.
+    # Use for manually-created indexes (GIN, trigram, etc.) not managed by models.
+    exclude_indexes: list[str] = field(default_factory=list)
+    # Columns to skip when detecting dropped columns. Format: "table.column".
+    # Use for columns that exist in DB but are not mapped in models.
+    exclude_columns: list[str] = field(default_factory=list)
+    # Whether to detect column type changes during autogenerate.
+    # Disable if you have intentional model/DB type mismatches (e.g. Enum vs VARCHAR).
+    compare_types: bool = True
     # Set when db_url had an async driver that was auto-replaced.
     _async_driver_warning: str | None = field(default=None, repr=False)
 
@@ -99,12 +111,19 @@ class Config:
                 "MIGRIFY_DB_URL environment variable."
             )
         db_url, _warn = cls._normalize_db_url(db_url)
+        exclude_tables = data.get("exclude_tables", [])
+        if isinstance(exclude_tables, str):
+            exclude_tables = [exclude_tables]
         return cls(
             db_url=db_url,
             migrations_dir=data.get("migrations_dir", "migrations"),
             migrations_table=data.get("migrations_table", "migrations"),
             models_module=data.get("models_module"),
             models_metadata_attr=data.get("models_metadata_attr", "metadata"),
+            exclude_tables=list(exclude_tables),
+            exclude_indexes=list(data.get("exclude_indexes", [])),
+            exclude_columns=list(data.get("exclude_columns", [])),
+            compare_types=data.get("compare_types", True),
             _async_driver_warning=_warn,
         )
 

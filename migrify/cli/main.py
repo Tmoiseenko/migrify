@@ -263,7 +263,14 @@ def make(
 
         engine = sa.create_engine(config.db_url)
         metadata = load_metadata_from_module(config.models_module, config.models_metadata_attr)
-        upgrade_body, downgrade_body = generate_migration_content(engine, metadata)
+        upgrade_body, downgrade_body = generate_migration_content(
+            engine,
+            metadata,
+            exclude_tables=set(config.exclude_tables) if config.exclude_tables else None,
+            compare_types=config.compare_types,
+            exclude_indexes=set(config.exclude_indexes) if config.exclude_indexes else None,
+            exclude_columns=set(config.exclude_columns) if config.exclude_columns else None,
+        )
 
         path = creator.create(
             name,

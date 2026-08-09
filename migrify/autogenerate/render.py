@@ -8,6 +8,7 @@ matching what a developer would write by hand.
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.sql.elements import ClauseElement
 from sqlalchemy.sql.sqltypes import TypeEngine
 
 from migrify.autogenerate.compare import (
@@ -38,6 +39,11 @@ def render_type(t: TypeEngine) -> str:
     Numeric(10, 2)      → "sa.Numeric(precision=10, scale=2)"
     """
     cls = type(t).__name__
+
+    # Enum — check before length since sa.Enum has a length attribute
+    if isinstance(t, sa.Enum) and t.enums:
+        enums_str = ", ".join(f"{e!r}" for e in t.enums)
+        return f"sa.Enum({enums_str})"
 
     # Types with explicit length
     if hasattr(t, "length") and t.length is not None:
@@ -86,8 +92,14 @@ def render_column(col: sa.Column, indent: int = 8) -> str:
         parts.append("nullable=False")
     if col.server_default is not None:
         sd = col.server_default
-        val = sd.arg if hasattr(sd, "arg") else str(sd)
-        parts.append(f"server_default={val!r}")
+        if hasattr(sd, "arg"):
+            arg = sd.arg
+            if isinstance(arg, str):
+                parts.append(f"server_default={arg!r}")
+            elif isinstance(arg, ClauseElement):
+                compiled = str(arg.compile(compile_kwargs={"literal_binds": True}))
+                parts.append(f"server_default=sa.text({compiled!r})")
+        # FetchedValue (no arg) — no server_default to render
     if col.comment:
         parts.append(f"comment={col.comment!r}")
 
@@ -166,14 +178,30 @@ def render_alter_column(diff: AlterColumnDiff) -> str:
 
 def render_create_index(diff: CreateIndexDiff) -> str:
     idx = diff.index
-    col_names = [c.name for c in idx.columns]
-    cols_str = ", ".join(f"{n!r}" for n in col_names)
+    col_exprs: list[str] = []
+    for expr in idx.expressions:
+        if hasattr(expr, "name") and expr.name:
+            # Regular Column
+            col_exprs.append(repr(expr.name))
+        else:
+            # text() or other SQL expression (e.g. functional/GIN index)
+            compiled = str(expr.compile(compile_kwargs={"literal_binds": True}))
+            col_exprs.append(f"sa.literal_column({compiled!r})")
+    cols_str = ", ".join(col_exprs)
     unique_str = ", unique=True" if idx.unique else ""
     schema_str = f", schema={diff.schema!r}" if diff.schema else ""
+    # Render dialect-specific kwargs, skipping None and empty collections
+    dialect_opts = ""
+    if idx.dialect_options:
+        for dialect, opts in idx.dialect_options.items():
+            for key, val in opts.items():
+                if val is None or val == {} or val == [] or val is False:
+                    continue
+                dialect_opts += f", {dialect}_{key}={val!r}"
     return (
         f"    op.create_index(\n"
         f"        {idx.name!r}, {diff.table_name!r},\n"
-        f"        [{cols_str}]{unique_str}{schema_str},\n"
+        f"        [{cols_str}]{unique_str}{schema_str}{dialect_opts},\n"
         f"    )"
     )
 
