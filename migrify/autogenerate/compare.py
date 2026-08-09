@@ -10,13 +10,12 @@ Returns a list of ``Diff`` objects that describe what needs to change.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from dataclasses import dataclass
+from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.engine import Engine
-
 
 # ---------------------------------------------------------------------------
 # Diff data classes
@@ -30,57 +29,57 @@ class CreateTableDiff:
 @dataclass
 class DropTableDiff:
     table_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class AddColumnDiff:
     table_name: str
     column: sa.Column
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class DropColumnDiff:
     table_name: str
     column_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class AlterColumnDiff:
     table_name: str
     column_name: str
-    changes: Dict[str, Any]   # e.g. {"type": sa.Integer(), "nullable": False}
-    schema: Optional[str] = None
+    changes: dict[str, Any]   # e.g. {"type": sa.Integer(), "nullable": False}
+    schema: str | None = None
 
 
 @dataclass
 class CreateIndexDiff:
     index: sa.Index
     table_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class DropIndexDiff:
     index_name: str
     table_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class CreateForeignKeyDiff:
     constraint: sa.ForeignKeyConstraint
     table_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 @dataclass
 class DropForeignKeyDiff:
     constraint_name: str
     table_name: str
-    schema: Optional[str] = None
+    schema: str | None = None
 
 
 Diff = (
@@ -146,22 +145,22 @@ class SchemaComparator:
         self,
         engine: Engine,
         metadata: sa.MetaData,
-        include_schemas: Optional[Set[Optional[str]]] = None,
-        exclude_tables: Optional[Set[str]] = None,
+        include_schemas: set[str | None] | None = None,
+        exclude_tables: set[str] | None = None,
     ) -> None:
         self._engine = engine
         self._metadata = metadata
-        self._include_schemas: Set[Optional[str]] = include_schemas or {None}
-        self._exclude_tables: Set[str] = exclude_tables or set()
+        self._include_schemas: set[str | None] = include_schemas or {None}
+        self._exclude_tables: set[str] = exclude_tables or set()
 
-    def compare(self) -> List[Diff]:
+    def compare(self) -> list[Diff]:
         """Run the comparison and return detected diffs."""
-        diffs: List[Diff] = []
+        diffs: list[Diff] = []
         inspector = sa_inspect(self._engine)
 
         for schema in self._include_schemas:
-            db_table_names: Set[str] = set(inspector.get_table_names(schema=schema))
-            model_tables: Dict[str, sa.Table] = {
+            db_table_names: set[str] = set(inspector.get_table_names(schema=schema))
+            model_tables: dict[str, sa.Table] = {
                 t.name: t
                 for t in self._metadata.sorted_tables
                 if t.schema == schema and t.name not in self._exclude_tables
@@ -190,17 +189,17 @@ class SchemaComparator:
         self,
         inspector,
         model_table: sa.Table,
-        schema: Optional[str],
-    ) -> List[Diff]:
-        diffs: List[Diff] = []
+        schema: str | None,
+    ) -> list[Diff]:
+        diffs: list[Diff] = []
         table_name = model_table.name
 
         # ── Columns ──────────────────────────────────────────────────
-        db_cols: Dict[str, dict] = {
+        db_cols: dict[str, dict] = {
             c["name"]: c
             for c in inspector.get_columns(table_name, schema=schema)
         }
-        model_cols: Dict[str, sa.Column] = {
+        model_cols: dict[str, sa.Column] = {
             c.name: c for c in model_table.columns
         }
 
@@ -237,12 +236,12 @@ class SchemaComparator:
                 )
 
         # ── Indexes ──────────────────────────────────────────────────
-        db_indexes: Dict[str, dict] = {
+        db_indexes: dict[str, dict] = {
             idx["name"]: idx
             for idx in inspector.get_indexes(table_name, schema=schema)
             if idx.get("name")
         }
-        model_indexes: Dict[str, sa.Index] = {
+        model_indexes: dict[str, sa.Index] = {
             idx.name: idx
             for idx in model_table.indexes
             if idx.name
@@ -269,11 +268,11 @@ class SchemaComparator:
                 )
 
         # ── Foreign keys ─────────────────────────────────────────────
-        db_fks: Dict[str, dict] = {
+        db_fks: dict[str, dict] = {
             fk.get("name", ""): fk
             for fk in inspector.get_foreign_keys(table_name, schema=schema)
         }
-        model_fks: Dict[str, sa.ForeignKeyConstraint] = {}
+        model_fks: dict[str, sa.ForeignKeyConstraint] = {}
         for constraint in model_table.constraints:
             if isinstance(constraint, sa.ForeignKeyConstraint) and constraint.name:
                 model_fks[constraint.name] = constraint
@@ -301,9 +300,9 @@ class SchemaComparator:
         return diffs
 
     @staticmethod
-    def _diff_column(model_col: sa.Column, db_info: dict) -> Dict[str, Any]:
+    def _diff_column(model_col: sa.Column, db_info: dict) -> dict[str, Any]:
         """Return a dict of changed attributes between model column and DB column."""
-        changes: Dict[str, Any] = {}
+        changes: dict[str, Any] = {}
 
         if not _types_equivalent(model_col.type, db_info["type"]):
             changes["type"] = model_col.type

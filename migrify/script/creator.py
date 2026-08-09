@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -38,11 +37,11 @@ class MigrationCreator:
         self,
         name: str,
         *,
-        create_table: Optional[str] = None,
-        update_table: Optional[str] = None,
-        content: Optional[str] = None,
-        upgrade_body: Optional[str] = None,
-        downgrade_body: Optional[str] = None,
+        create_table: str | None = None,
+        update_table: str | None = None,
+        content: str | None = None,
+        upgrade_body: str | None = None,
+        downgrade_body: str | None = None,
     ) -> Path:
         """
         Generate a new migration file.
@@ -88,7 +87,7 @@ class MigrationCreator:
 
     @staticmethod
     def _make_filename(name: str) -> str:
-        ts = datetime.now().strftime("%Y_%m_%d_%H%M%S")
+        ts = datetime.now(tz=timezone.utc).strftime("%Y_%m_%d_%H%M%S")
         # Normalise name: spaces / hyphens → underscores, lowercase
         safe_name = name.strip().replace(" ", "_").replace("-", "_").lower()
         return f"{ts}_{safe_name}.py"

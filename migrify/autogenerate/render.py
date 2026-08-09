@@ -7,8 +7,6 @@ matching what a developer would write by hand.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import sqlalchemy as sa
 from sqlalchemy.sql.sqltypes import TypeEngine
 
@@ -24,7 +22,6 @@ from migrify.autogenerate.compare import (
     DropIndexDiff,
     DropTableDiff,
 )
-
 
 # ---------------------------------------------------------------------------
 # Type renderer
@@ -79,7 +76,7 @@ def render_column(col: sa.Column, indent: int = 8) -> str:
         Number of spaces to indent the line.
     """
     pad = " " * indent
-    parts: List[str] = [f"{col.name!r}", render_type(col.type)]
+    parts: list[str] = [f"{col.name!r}", render_type(col.type)]
 
     if col.primary_key:
         parts.append("primary_key=True")
@@ -104,7 +101,7 @@ def render_column(col: sa.Column, indent: int = 8) -> str:
 
 def render_create_table(diff: CreateTableDiff) -> str:
     table = diff.table
-    lines: List[str] = [f'    op.create_table(']
+    lines: list[str] = ['    op.create_table(']
     lines.append(f'        {table.name!r},')
 
     for col in table.columns:
@@ -152,7 +149,7 @@ def render_drop_column(diff: DropColumnDiff) -> str:
 
 
 def render_alter_column(diff: AlterColumnDiff) -> str:
-    parts: List[str] = []
+    parts: list[str] = []
     if "type" in diff.changes:
         parts.append(f"type_={render_type(diff.changes['type'])}")
     if "nullable" in diff.changes:
@@ -192,7 +189,7 @@ def render_create_fk(diff: CreateForeignKeyDiff) -> str:
     fk = diff.constraint
     local_cols = [c.name for c in fk.columns]
     remote_cols = [fkc.column.name for fkc in fk.elements]
-    referent = list(fk.elements)[0].column.table.name if fk.elements else "unknown"
+    referent = next(iter(fk.elements)).column.table.name if fk.elements else "unknown"
     local_str = ", ".join(f"{c!r}" for c in local_cols)
     remote_str = ", ".join(f"{c!r}" for c in remote_cols)
     schema_str = f", source_schema={diff.schema!r}" if diff.schema else ""
@@ -241,13 +238,10 @@ def render_diff(diff: Diff) -> str:
     return f"    # TODO: unhandled diff: {diff!r}"
 
 
-def render_upgrade_body(diffs: List[Diff]) -> str:
+def render_upgrade_body(diffs: list[Diff]) -> str:
     """Render the body of the ``upgrade()`` function."""
     if not diffs:
         return "    pass"
-    upgrade_diffs = [d for d in diffs if not isinstance(d, (DropTableDiff, DropColumnDiff, DropIndexDiff, DropForeignKeyDiff))]
-    # For upgrade: create new things, add columns, etc.
-    # For tables being dropped → that goes to downgrade
     lines = [render_diff(d) for d in diffs
              if not isinstance(d, (DropTableDiff, DropColumnDiff, DropIndexDiff, DropForeignKeyDiff))]
     # DropTable/DropColumn in the diff means they were REMOVED from models →
@@ -257,12 +251,12 @@ def render_upgrade_body(diffs: List[Diff]) -> str:
     return "\n\n".join(lines) if lines else "    pass"
 
 
-def render_downgrade_body(diffs: List[Diff]) -> str:
+def render_downgrade_body(diffs: list[Diff]) -> str:
     """Render the body of the ``downgrade()`` function (reverse of upgrade)."""
     if not diffs:
         return "    pass"
 
-    lines: List[str] = []
+    lines: list[str] = []
     for diff in reversed(diffs):
         if isinstance(diff, CreateTableDiff):
             lines.append(render_drop_table(DropTableDiff(diff.table.name, diff.table.schema)))

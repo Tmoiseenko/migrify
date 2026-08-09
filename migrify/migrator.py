@@ -17,18 +17,15 @@ This is intentionally modelled after Laravel's Migrator class:
 from __future__ import annotations
 
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Callable, List, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
-from migrify.exceptions import MigrationError
 from migrify.operations.ops import Operations, _current_ops
-from migrify.repository import MigrationRecord, MigrationRepositoryInterface
+from migrify.repository import MigrationRepositoryInterface
 from migrify.script.loader import MigrationScript, ScriptLoader
-
 
 # ---------------------------------------------------------------------------
 # Result & Event types
@@ -39,14 +36,14 @@ class MigrationResult:
     name: str
     direction: str          # "upgrade" | "downgrade"
     success: bool
-    sql: Optional[str] = None       # populated in pretend mode
-    error: Optional[str] = None
+    sql: str | None = None       # populated in pretend mode
+    error: str | None = None
 
 
 @dataclass
 class MigrateReport:
-    applied: List[MigrationResult] = field(default_factory=list)
-    failed: Optional[MigrationResult] = None
+    applied: list[MigrationResult] = field(default_factory=list)
+    failed: MigrationResult | None = None
 
     @property
     def success(self) -> bool:
@@ -56,7 +53,7 @@ class MigrateReport:
 @dataclass
 class StatusEntry:
     name: str
-    batch: Optional[int]    # None = not yet run
+    batch: int | None    # None = not yet run
     ran: bool
 
 
@@ -85,7 +82,7 @@ class Migrator:
         engine: Engine,
         repository: MigrationRepositoryInterface,
         loader: ScriptLoader,
-        on_message: Optional[Callable[[str], None]] = None,
+        on_message: Callable[[str], None] | None = None,
     ) -> None:
         self._engine = engine
         self._repo = repository
@@ -234,13 +231,13 @@ class Migrator:
 
         return self.migrate(pretend=pretend)
 
-    def status(self) -> List[StatusEntry]:
+    def status(self) -> list[StatusEntry]:
         """Return the run/pending status of every migration file."""
         self._ensure_repository()
         all_scripts = self._loader.get_all_scripts()
         records = {r.migration: r for r in self._repo.get_all()}
 
-        entries: List[StatusEntry] = []
+        entries: list[StatusEntry] = []
         for script in all_scripts:
             rec = records.get(script.name)
             entries.append(
@@ -272,7 +269,7 @@ class Migrator:
         """
         try:
             module = script.load()
-        except Exception as exc:
+        except Exception:  # noqa: BLE001
             return MigrationResult(
                 name=script.name,
                 direction=direction,
@@ -302,7 +299,7 @@ class Migrator:
                     fn()
                 finally:
                     _current_ops.reset(token)
-        except Exception as exc:
+        except Exception:  # noqa: BLE001
             return MigrationResult(
                 name=script.name,
                 direction=direction,
@@ -312,14 +309,14 @@ class Migrator:
 
         return MigrationResult(name=script.name, direction=direction, success=True)
 
-    def _collect_sql(self, fn: Callable) -> List[str]:
+    def _collect_sql(self, fn: Callable) -> list[str]:
         """
         Run *fn* inside a real transaction that is rolled back immediately,
         capturing every SQL statement via SQLAlchemy's before_cursor_execute event.
         """
         from sqlalchemy import event
 
-        statements: List[str] = []
+        statements: list[str] = []
 
         def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
             statements.append(statement)
@@ -331,13 +328,13 @@ class Migrator:
                 token = _current_ops.set(ops)
                 try:
                     fn()
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
                 finally:
                     _current_ops.reset(token)
                 # Roll back so nothing is actually applied
                 conn.rollback()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         finally:
             event.remove(self._engine, "before_cursor_execute", _before_cursor_execute)

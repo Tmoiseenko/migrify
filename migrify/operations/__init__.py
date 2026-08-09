@@ -1,4 +1,4 @@
-from migrify.operations.ops import op, Operations, BatchOperations, _current_ops
+from migrify.operations.ops import BatchOperations, Operations, _current_ops, op
 
-__all__ = ["op", "Operations", "BatchOperations", "_current_ops"]
+__all__ = ["BatchOperations", "Operations", "_current_ops", "op"]
 

@@ -15,8 +15,6 @@ concept (and the mental model) is identical.
 
 from __future__ import annotations
 
-from typing import List
-
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
@@ -49,7 +47,7 @@ class DatabaseMigrationRepository(MigrationRepositoryInterface):
         insp = sa.inspect(self._engine)
         return insp.has_table(self._table_name)
 
-    def get_ran(self) -> List[str]:
+    def get_ran(self) -> list[str]:
         with self._engine.connect() as conn:
             rows = conn.execute(
                 sa.select(self._table.c.migration).order_by(
@@ -58,7 +56,7 @@ class DatabaseMigrationRepository(MigrationRepositoryInterface):
             )
             return [r[0] for r in rows]
 
-    def get_last_batch(self) -> List[str]:
+    def get_last_batch(self) -> list[str]:
         batch_num = self.get_last_batch_number()
         if batch_num == 0:
             return []
@@ -91,7 +89,7 @@ class DatabaseMigrationRepository(MigrationRepositoryInterface):
                 sa.delete(self._table).where(self._table.c.migration == migration)
             )
 
-    def get_all(self) -> List[MigrationRecord]:
+    def get_all(self) -> list[MigrationRecord]:
         with self._engine.connect() as conn:
             rows = conn.execute(
                 sa.select(self._table).order_by(

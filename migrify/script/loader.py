@@ -6,7 +6,6 @@ import importlib.util
 import re
 from pathlib import Path
 from types import ModuleType
-from typing import List, Optional
 
 from migrify.exceptions import ScriptError
 
@@ -52,7 +51,7 @@ class MigrationScript:
     # Ordering — purely by filename (timestamp prefix guarantees order)
     # ------------------------------------------------------------------
 
-    def __lt__(self, other: "MigrationScript") -> bool:
+    def __lt__(self, other: MigrationScript) -> bool:
         return self.name < other.name
 
     def __eq__(self, other: object) -> bool:
@@ -80,7 +79,7 @@ class ScriptLoader:
     def __init__(self, migrations_dir: Path | str) -> None:
         self.migrations_dir = Path(migrations_dir)
 
-    def get_all_scripts(self) -> List[MigrationScript]:
+    def get_all_scripts(self) -> list[MigrationScript]:
         """Return all migration scripts sorted by name (i.e. by timestamp)."""
         if not self.migrations_dir.exists():
             return []
@@ -91,12 +90,12 @@ class ScriptLoader:
         ]
         return sorted(scripts)
 
-    def get_pending(self, ran: List[str]) -> List[MigrationScript]:
+    def get_pending(self, ran: list[str]) -> list[MigrationScript]:
         """Return scripts that are not yet in the *ran* list."""
         ran_set = set(ran)
         return [s for s in self.get_all_scripts() if s.name not in ran_set]
 
-    def get_script(self, name: str) -> Optional[MigrationScript]:
+    def get_script(self, name: str) -> MigrationScript | None:
         """Find a specific script by its stem name."""
         path = self.migrations_dir / f"{name}.py"
         if path.exists():

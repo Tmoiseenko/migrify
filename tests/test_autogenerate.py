@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 import sqlalchemy as sa
 
 from migrify.autogenerate.api import compare_metadata, generate_migration_content
@@ -125,7 +124,7 @@ class TestGenerateMigrationContent:
 
     def test_generates_pass_when_no_diff(self, engine):
         meta = sa.MetaData()
-        tbl = sa.Table(
+        sa.Table(
             "synced",
             meta,
             sa.Column("id", sa.Integer(), primary_key=True),

@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-import textwrap
-from pathlib import Path
-
-import pytest
 import sqlalchemy as sa
 
 from tests.conftest import write_migration
-from migrify.migrator import Migrator
 
 
 class TestMigratorMigrate:

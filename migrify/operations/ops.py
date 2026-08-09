@@ -20,8 +20,12 @@ Usage inside a migration file:
 from __future__ import annotations
 
 import contextvars
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Generator, List, Optional, Union
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from typing import Self
 
 import sqlalchemy as sa
 from sqlalchemy import text
@@ -31,7 +35,7 @@ from sqlalchemy.engine import Connection
 # Context variable — holds the active Operations instance while a migration
 # upgrade() / downgrade() function is running.
 # ---------------------------------------------------------------------------
-_current_ops: contextvars.ContextVar["Operations | None"] = contextvars.ContextVar(
+_current_ops: contextvars.ContextVar[Operations | None] = contextvars.ContextVar(
     "_current_ops", default=None
 )
 
@@ -45,7 +49,7 @@ class BatchOperations:
     strategy is used automatically.
     """
 
-    def __init__(self, ops: "Operations", table_name: str, schema: Optional[str]) -> None:
+    def __init__(self, ops: Operations, table_name: str, schema: str | None) -> None:
         self._ops = ops
         self._table_name = table_name
         self._schema = schema
@@ -64,7 +68,7 @@ class BatchOperations:
         for col_name in self._pending_drop_columns:
             self._ops.drop_column(self._table_name, col_name, schema=self._schema)
 
-    def __enter__(self) -> "BatchOperations":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -93,8 +97,8 @@ class Operations:
     def create_table(
         self,
         table_name: str,
-        *columns: Union[sa.Column, sa.Constraint],
-        schema: Optional[str] = None,
+        *columns: sa.Column | sa.Constraint,
+        schema: str | None = None,
         **kw: Any,
     ) -> sa.Table:
         """Create a new table and return the ``Table`` object."""
@@ -106,7 +110,7 @@ class Operations:
     def drop_table(
         self,
         table_name: str,
-        schema: Optional[str] = None,
+        schema: str | None = None,
         checkfirst: bool = False,
     ) -> None:
         """Drop a table."""
@@ -118,7 +122,7 @@ class Operations:
         self,
         old_name: str,
         new_name: str,
-        schema: Optional[str] = None,
+        schema: str | None = None,
     ) -> None:
         """Rename a table."""
         prefix = f"{schema}." if schema else ""
@@ -134,7 +138,7 @@ class Operations:
         self,
         table_name: str,
         column: sa.Column,
-        schema: Optional[str] = None,
+        schema: str | None = None,
     ) -> None:
         """Add a column to an existing table."""
         dialect = self._conn.dialect
@@ -164,7 +168,7 @@ class Operations:
         self,
         table_name: str,
         column_name: str,
-        schema: Optional[str] = None,
+        schema: str | None = None,
     ) -> None:
         """Drop a column from an existing table."""
         dialect = self._conn.dialect
@@ -182,11 +186,11 @@ class Operations:
         table_name: str,
         column_name: str,
         *,
-        new_column_name: Optional[str] = None,
-        type_: Optional[sa.types.TypeEngine] = None,
-        nullable: Optional[bool] = None,
-        server_default: Optional[Any] = None,
-        schema: Optional[str] = None,
+        new_column_name: str | None = None,
+        type_: sa.types.TypeEngine | None = None,
+        nullable: bool | None = None,
+        server_default: Any | None = None,
+        schema: str | None = None,
     ) -> None:
         """
         Alter an existing column.
@@ -250,12 +254,12 @@ class Operations:
 
     def create_index(
         self,
-        index_name: Optional[str],
+        index_name: str | None,
         table_name: str,
-        columns: List[str],
+        columns: list[str],
         *,
         unique: bool = False,
-        schema: Optional[str] = None,
+        schema: str | None = None,
         **kw: Any,
     ) -> None:
         """Create an index on *table_name*."""
@@ -268,8 +272,8 @@ class Operations:
     def drop_index(
         self,
         index_name: str,
-        table_name: Optional[str] = None,
-        schema: Optional[str] = None,
+        table_name: str | None = None,
+        schema: str | None = None,
         if_exists: bool = False,
     ) -> None:
         """Drop an index by name."""
@@ -293,16 +297,16 @@ class Operations:
 
     def create_foreign_key(
         self,
-        constraint_name: Optional[str],
+        constraint_name: str | None,
         source_table: str,
         referent_table: str,
-        local_cols: List[str],
-        remote_cols: List[str],
+        local_cols: list[str],
+        remote_cols: list[str],
         *,
-        ondelete: Optional[str] = None,
-        onupdate: Optional[str] = None,
-        schema: Optional[str] = None,
-        referent_schema: Optional[str] = None,
+        ondelete: str | None = None,
+        onupdate: str | None = None,
+        schema: str | None = None,
+        referent_schema: str | None = None,
     ) -> None:
         """Add a foreign key constraint via ALTER TABLE."""
         dialect = self._conn.dialect
@@ -335,8 +339,8 @@ class Operations:
         self,
         constraint_name: str,
         table_name: str,
-        type_: Optional[str] = None,
-        schema: Optional[str] = None,
+        type_: str | None = None,
+        schema: str | None = None,
     ) -> None:
         """Drop a named constraint."""
         dialect = self._conn.dialect
@@ -365,14 +369,14 @@ class Operations:
     # Utility
     # ------------------------------------------------------------------
 
-    def execute(self, sqltext: Union[str, Any], parameters: Optional[dict] = None) -> Any:
+    def execute(self, sqltext: str | Any, parameters: dict | None = None) -> Any:
         """Execute arbitrary SQL."""
         stmt = text(sqltext) if isinstance(sqltext, str) else sqltext
         if parameters:
             return self._conn.execute(stmt, parameters)
         return self._conn.execute(stmt)
 
-    def bulk_insert(self, table: sa.Table, rows: List[dict]) -> None:
+    def bulk_insert(self, table: sa.Table, rows: list[dict]) -> None:
         """Bulk-insert *rows* (list of dicts) into *table*."""
         if rows:
             self._conn.execute(table.insert(), rows)
@@ -381,7 +385,7 @@ class Operations:
     def batch_alter_table(
         self,
         table_name: str,
-        schema: Optional[str] = None,
+        schema: str | None = None,
     ) -> Generator[BatchOperations, None, None]:
         """
         Context manager for grouped column/constraint alterations.
@@ -429,5 +433,5 @@ class _OpProxy:
 
 op = _OpProxy()
 
-__all__ = ["op", "Operations", "BatchOperations", "_current_ops"]
+__all__ = ["BatchOperations", "Operations", "_current_ops", "op"]
 

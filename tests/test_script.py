@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import pytest
-
 from migrify.script.creator import MigrationCreator
 from migrify.script.loader import MigrationScript, ScriptLoader
 

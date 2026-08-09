@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List
 
 
 class MigrationRecord:
     """A single row from the migrations tracking table."""
 
-    __slots__ = ("id", "migration", "batch")
+    __slots__ = ("batch", "id", "migration")
 
     def __init__(self, id: int, migration: str, batch: int) -> None:
         self.id = id
@@ -36,11 +35,11 @@ class MigrationRepositoryInterface(ABC):
         """Return True if the storage has already been initialised."""
 
     @abstractmethod
-    def get_ran(self) -> List[str]:
+    def get_ran(self) -> list[str]:
         """Return migration names that have already been applied, ordered by batch then name."""
 
     @abstractmethod
-    def get_last_batch(self) -> List[str]:
+    def get_last_batch(self) -> list[str]:
         """Return migration names belonging to the last batch (in reverse run order)."""
 
     @abstractmethod
@@ -60,6 +59,6 @@ class MigrationRepositoryInterface(ABC):
         """Remove the record for *migration* (called during rollback)."""
 
     @abstractmethod
-    def get_all(self) -> List[MigrationRecord]:
+    def get_all(self) -> list[MigrationRecord]:
         """Return all records, ordered by batch then migration name."""
 

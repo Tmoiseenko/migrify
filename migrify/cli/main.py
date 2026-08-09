@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 import sqlalchemy as sa
@@ -25,7 +24,6 @@ from migrify.migrator import Migrator
 from migrify.repository.database import DatabaseMigrationRepository
 from migrify.script.creator import MigrationCreator
 from migrify.script.loader import ScriptLoader
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -55,7 +53,7 @@ def _make_migrator(config: Config, verbose: bool = True) -> Migrator:
     return Migrator(engine=engine, repository=repo, loader=loader, on_message=log)
 
 
-def _load_config(db_url: Optional[str]) -> Config:
+def _load_config(db_url: str | None) -> Config:
     if db_url:
         config = Config(db_url=db_url)
     else:
@@ -83,7 +81,7 @@ def cli() -> None:
 @click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--step", is_flag=True, default=False, help="Each migration in its own batch.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
-def migrate(db_url: Optional[str], step: bool, pretend: bool) -> None:
+def migrate(db_url: str | None, step: bool, pretend: bool) -> None:
     """Apply all pending migrations."""
     config = _load_config(db_url)
     migrator = _make_migrator(config)
@@ -115,7 +113,7 @@ def migrate(db_url: Optional[str], step: bool, pretend: bool) -> None:
 @click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--batch", "batches", default=1, show_default=True, help="Number of batches to roll back.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
-def rollback(db_url: Optional[str], batches: int, pretend: bool) -> None:
+def rollback(db_url: str | None, batches: int, pretend: bool) -> None:
     """Roll back the last batch of migrations."""
     config = _load_config(db_url)
     migrator = _make_migrator(config)
@@ -147,7 +145,7 @@ def rollback(db_url: Optional[str], batches: int, pretend: bool) -> None:
 @click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 @click.confirmation_option(prompt="This will roll back ALL migrations. Continue?")
-def reset(db_url: Optional[str], pretend: bool) -> None:
+def reset(db_url: str | None, pretend: bool) -> None:
     """Roll back every applied migration."""
     config = _load_config(db_url)
     migrator = _make_migrator(config)
@@ -168,7 +166,7 @@ def reset(db_url: Optional[str], pretend: bool) -> None:
 @click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
 @click.option("--pretend", is_flag=True, default=False, help="Show SQL without executing.")
 @click.confirmation_option(prompt="This will DROP ALL TABLES and re-migrate. Continue?")
-def fresh(db_url: Optional[str], pretend: bool) -> None:
+def fresh(db_url: str | None, pretend: bool) -> None:
     """Drop all tables and re-run every migration from scratch."""
     config = _load_config(db_url)
     migrator = _make_migrator(config)
@@ -187,7 +185,7 @@ def fresh(db_url: Optional[str], pretend: bool) -> None:
 
 @cli.command()
 @click.option("--db-url", envvar="MIGRIFY_DB_URL", default=None, help="Database URL.")
-def status(db_url: Optional[str]) -> None:
+def status(db_url: str | None) -> None:
     """Show the status of all migration files."""
     config = _load_config(db_url)
     migrator = _make_migrator(config, verbose=False)
@@ -230,9 +228,9 @@ def status(db_url: Optional[str]) -> None:
 )
 def make(
     name: str,
-    db_url: Optional[str],
-    create_table: Optional[str],
-    update_table: Optional[str],
+    db_url: str | None,
+    create_table: str | None,
+    update_table: str | None,
     autogenerate: bool,
 ) -> None:
     """Create a new migration file.
@@ -258,7 +256,10 @@ def make(
             sys.exit(1)
 
         _echo_info(f"Loading models from {config.models_module!r}…")
-        from migrify.autogenerate.api import generate_migration_content, load_metadata_from_module
+        from migrify.autogenerate.api import (
+            generate_migration_content,
+            load_metadata_from_module,
+        )
 
         engine = sa.create_engine(config.db_url)
         metadata = load_metadata_from_module(config.models_module, config.models_metadata_attr)

@@ -22,14 +22,12 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import List, Optional, Set, Tuple
 
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
 from migrify.autogenerate.compare import Diff, SchemaComparator
 from migrify.autogenerate.render import render_downgrade_body, render_upgrade_body
-
 
 # ---------------------------------------------------------------------------
 # Public functions
@@ -38,9 +36,9 @@ from migrify.autogenerate.render import render_downgrade_body, render_upgrade_bo
 def compare_metadata(
     engine: Engine,
     metadata: sa.MetaData,
-    include_schemas: Optional[Set[Optional[str]]] = None,
-    exclude_tables: Optional[Set[str]] = None,
-) -> List[Diff]:
+    include_schemas: set[str | None] | None = None,
+    exclude_tables: set[str] | None = None,
+) -> list[Diff]:
     """
     Compare *metadata* against the live schema and return detected diffs.
 
@@ -72,9 +70,9 @@ def compare_metadata(
 def generate_migration_content(
     engine: Engine,
     metadata: sa.MetaData,
-    include_schemas: Optional[Set[Optional[str]]] = None,
-    exclude_tables: Optional[Set[str]] = None,
-) -> Tuple[str, str]:
+    include_schemas: set[str | None] | None = None,
+    exclude_tables: set[str] | None = None,
+) -> tuple[str, str]:
     """
     Generate the Python source for ``upgrade()`` and ``downgrade()`` bodies.
 

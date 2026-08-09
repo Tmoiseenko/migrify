@@ -22,7 +22,6 @@ import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from migrify.exceptions import ConfigurationError
 
@@ -48,12 +47,12 @@ class Config:
     migrations_table: str = "migrations"
     # Dotted Python path to a module that exposes a SQLAlchemy MetaData
     # (or a callable returning one) — used for autogenerate.
-    models_module: Optional[str] = None
+    models_module: str | None = None
     # Attribute name inside models_module that holds the MetaData object.
     # Defaults to "metadata".
     models_metadata_attr: str = "metadata"
     # Set when db_url had an async driver that was auto-replaced.
-    _async_driver_warning: Optional[str] = field(default=None, repr=False)
+    _async_driver_warning: str | None = field(default=None, repr=False)
 
     # ------------------------------------------------------------------
     # Factories
@@ -92,7 +91,7 @@ class Config:
         return url, None
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Config":
+    def from_dict(cls, data: dict) -> Config:
         db_url = data.get("db_url") or os.environ.get("MIGRIFY_DB_URL")
         if not db_url:
             raise ConfigurationError(
@@ -110,7 +109,7 @@ class Config:
         )
 
     @classmethod
-    def from_toml_file(cls, path: Path) -> "Config":
+    def from_toml_file(cls, path: Path) -> Config:
         if tomllib is None:
             raise ConfigurationError(
                 "tomllib / tomli is required to read TOML config. "
@@ -121,7 +120,7 @@ class Config:
         return cls.from_dict(data)
 
     @classmethod
-    def from_pyproject(cls, path: Path = Path("pyproject.toml")) -> "Config":
+    def from_pyproject(cls, path: Path = Path("pyproject.toml")) -> Config:
         if tomllib is None:
             raise ConfigurationError(
                 "tomllib / tomli is required. Install tomli: pip install tomli"
@@ -132,7 +131,7 @@ class Config:
         return cls.from_dict(section)
 
     @classmethod
-    def load(cls, start_dir: Optional[Path] = None) -> "Config":
+    def load(cls, start_dir: Path | None = None) -> Config:
         """
         Auto-discover configuration by walking up from *start_dir*
         (defaults to cwd).  Checks:

@@ -22,7 +22,7 @@
 ## Installation
 
 ```bash
-pip install migrify-db
+pip install migrify
 ```
 
 ## Quickstart
